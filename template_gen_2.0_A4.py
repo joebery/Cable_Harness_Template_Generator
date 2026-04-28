@@ -3,13 +3,14 @@ from reportlab.lib.units import mm
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
+from reportlab.platypus import Table, TableStyle
 
 
 # ============================================================
 # DEV TOOLS
 # ============================================================
 
-OUTPUT_MODE = "FULL"      # options: "A4" or "FULL"
+OUTPUT_MODE = "A4"      # options: "A4" or "FULL"
 
 
 # ============================================================
@@ -21,7 +22,7 @@ DESCRIPTION_LINES = [
     "Breakout 1 & Breakout 2 harness",
     "Units: millimetres (mm)",
     "Reference layout – 1:1 scale",
-]
+] # You can add more lines if you want
 
 DESCRIPTION_TITLE = 'Cable Template Test'
 
@@ -36,12 +37,51 @@ MARGIN_MM = 10
 PAGE_WIDTH = PAGE_WIDTH_MM * mm
 PAGE_HEIGHT = PAGE_HEIGHT_MM * mm
 
+
+# ============================================================
+# BREAKOUT 1 TABLE CONFIGURATION
+# ============================================================
+
+BO1_TABLE_OFFSET_Y_MM = 100       # distance below Breakout 1 assembly
+BO1_TABLE_WIDTH_MM = 160         # overall table width
+BO1_TABLE_ROW_HEIGHT_MM = 10
+
+BO1_TABLE_TITLE = "BREAKOUT 1 ASSEMBLY"
+
+BO1_TABLE_DATA = [
+    ["ITEM", "DESCRIPTION"],
+    ["HS1", "Primary heatshrink"],
+    ["HS2", "Secondary heatshrink"],
+    ["AL TUBE", "Aluminium tube"],
+]
+
+# ============================================================
+# BREAKOUT 2 TABLE CONFIGURATION
+# ============================================================
+
+BO2_TABLE_GAP_MM = 70     # gap below BO1 table
+BO2_TABLE_WIDTH_MM = 200
+BO2_TABLE_ROW_HEIGHT_MM = 10
+
+BO2_TABLE_TITLE = "BREAKOUT 2 ASSEMBLY"
+
+BO2_TABLE_DATA = [
+    ["Tubing", "Tube (OD:8.5, ID:5.9)"],
+    ["Heat Shrink Tube 1", "HEATSHRINK 19mm ADHESIVE"],
+    ["Breakout Boot", "Rubber Breakout Boot 6cm"],
+    ["Heat Shrink Tube 2", "Heatshrink 1inch Black D"],
+    ["Furcation Tube", "3mm Furcation Tube"],
+]
+
+
+
 # ============================================================
 # MAIN CABLE GEOMETRY
 # ============================================================
-
+MAIN_VERTICAL_OFFSET_MM = +10 # +UP -DOWN 
 MAIN_LENGTH_MM = 400
 MAIN_CABLE_DIAMETER_MM = 20.4
+MAIN_CABLE_FILL_COLOR = HexColor("#FFD200")  
 
 # ============================================================
 # GROUP GEOMETRY
@@ -49,11 +89,16 @@ MAIN_CABLE_DIAMETER_MM = 20.4
 
 GROUP_COUNT = 6
 GROUP_OD_MM = 10.7
-GROUP_FAN_LENGTH = 550
-GROUP_PARALLEL_LENGTH = 550
-GROUP_FAN_SPREAD_DEG = 8
+GROUP_FAN_LENGTH = 520 
+GROUP_PARALLEL_LENGTH = 580
+GROUP_FAN_SPREAD_DEG = 9.8
 GROUP_STAGGER_STEP_MM = 70
 
+"""""
+QUICK NOTE 
+I HAVE TAKEN THE HEATSHRINK LENGTH FROM THE BREAKPOINT TO THE END 
+OFF OF THE PARALLEL LENGTH SO THE DIMENTIONS ARE SOUND
+"""""
 # ============================================================
 # LINE STYLES
 # ============================================================
@@ -61,6 +106,8 @@ GROUP_STAGGER_STEP_MM = 70
 LINE_MAIN = 1.5
 LINE_GROUP = 1.5
 LINE_SUBUNIT = 1.0
+
+
 
 
 # ============================================================
@@ -71,12 +118,16 @@ BREAKOUT1_INTERNAL_GAP = 25
 
 BREAKOUT1_HS1_LENGTH_MM = 185 # Should be the biggest heatshrink
 BREAKOUT1_HS1_DRAW_HEIGHT_MM = 40
+BREAKOUT1_HS1_DESCRIPTION = 'HS1'
 
 BREAKOUT1_HS2_LENGTH_MM = 135
 BREAKOUT1_HS2_DRAW_HEIGHT_MM = 32
+BREAKOUT1_HS2_DESCRIPTION = 'HS2'
 
 BREAKOUT1_AL_TUBE_LENGTH_MM = 105
 BREAKOUT1_AL_TUBE_DRAW_HEIGHT_MM = 35
+BREAKOUT1_AL_TUBE_DESCRIPTION = 'AL TUBE'
+
 
 
 
@@ -94,6 +145,9 @@ BREAKOUT1_HS2_START_BEFORE_MM = (
 BREAKOUT1_AL_TUBE_START_BEFORE_MM = (
     (BREAKOUT1_AL_TUBE_LENGTH_MM / 2) - (BREAKOUT1_INTERNAL_GAP / 2)#=40 
 )
+
+
+GROUP_PARALLEL_LENGTH = GROUP_PARALLEL_LENGTH - (BREAKOUT1_HS1_LENGTH_MM / 2) + (BREAKOUT1_INTERNAL_GAP / 2) #()+() = 105
 
 # ============================================================
 # BREAKOUT 1 ELEMENT RECTANGLES
@@ -126,11 +180,16 @@ BREAKOUT_RECT_COLORS = [
 # ============================================================
 
 BREAKOUT2_INTERNAL_GAP = 10
+
+BREAKOUT2_HS1_DESCRIPTION = "HS1"
 BREAKOUT2_HS1_LENGTH_MM = 145
 
+BREAKOUT2_HS2_DESCRIPTION = "HS2"
 BREAKOUT2_HS2_LENGTH_MM = 35
 
+BREAKOUT2_BOOT_DESCRIPTION = "BOOT"
 BREAKOUT2_BREAKOUT_BOOT_LENGTH_MM = 60
+
 
 # Derived offsets DO NOT CHANGE
 BREAKOUT2_HS1_START_BEFORE_MM = (
@@ -255,6 +314,61 @@ def draw_title_and_description(c, x_mm, y_mm, title, description_lines):
 
     c.restoreState()
 
+
+
+def draw_canvas_table(c, x_mm, y_mm, title, data, width_mm, row_height_mm):
+    """
+    Draws a titled table onto a canvas.
+    Bottom-left anchored at (x_mm, y_mm).
+    """
+
+    col_count = len(data[0])
+    col_widths = [width_mm / col_count] * col_count
+
+    table = Table(
+        data,
+        colWidths=[w * mm for w in col_widths],
+        rowHeights=[row_height_mm * mm] * len(data)
+    )
+
+    table.setStyle(TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.8, colors.black),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("FONT", (0, 0), (-1, -1), "Helvetica", 8),
+    ]))
+
+    # Title
+    c.setFont("Helvetica-Bold", 9)
+    c.setFillColor(colors.black)
+    c.drawCentredString(
+        (x_mm + width_mm / 2) * mm,
+        (y_mm + row_height_mm * len(data) + 6) * mm,
+        title
+    )
+
+    table.wrapOn(c, 0, 0)
+    table.drawOn(c, x_mm * mm, y_mm * mm)
+
+
+def draw_rotated_label(c, x_mm, y_mm, text, angle_deg=90):
+    """
+    Draws rotated text centred at (x_mm, y_mm).
+    """
+    c.saveState()
+    c.setFillColor(colors.black)
+    c.translate(x_mm * mm, y_mm * mm)
+    c.rotate(angle_deg)
+    c.setFont("Helvetica-Bold", 9)
+   
+
+    # Draw centred text at origin after transform
+    c.drawCentredString(0, -10, text)
+
+    c.restoreState()
+
+
 import base64
 
 def draw_credit_footer(c, x_mm, y_mm):
@@ -283,16 +397,8 @@ def draw_full_harness(c, x_offset_mm=0, y_offset_mm=0):
     c.translate(-x_offset_mm * mm, -y_offset_mm * mm)
 
 
-    # ========================================================
-    # PASTE *ALL* THE CONTENTS OF YOUR CURRENT draw_template()
-    # FROM:
-    #     base_x = ...
-    # DOWN TO (BUT NOT INCLUDING):
-    #     c.showPage()
-    #     c.save()
-    # ========================================================
     base_x = MARGIN_MM + 70
-    base_y = PAGE_HEIGHT_MM / 2
+    base_y = (PAGE_HEIGHT_MM / 2) + MAIN_VERTICAL_OFFSET_MM
 
     # --------------------------------------------------------
     # TITLE & DESCRIPTION (TOP LEFT)
@@ -326,45 +432,54 @@ def draw_full_harness(c, x_offset_mm=0, y_offset_mm=0):
     # --------------------------------------------------------
 
     c.setLineWidth(LINE_MAIN)
+    c.setStrokeColor(colors.black)
+    c.setFillColor(MAIN_CABLE_FILL_COLOR)
+
     c.rect(
         base_x * mm,
         (base_y - MAIN_CABLE_DIAMETER_MM / 2) * mm,
         MAIN_LENGTH_MM * mm,
         MAIN_CABLE_DIAMETER_MM * mm,
         stroke=1,
-        fill=0
+        fill=1
     )
 
     breakout1_x = base_x + MAIN_LENGTH_MM
 
+
     # --------------------------------------------------------
-    # BREAKOUT 1 CUT LINE (FIXED REFERENCE)
+    # BREAKOUT 1 CUT / BREAKOUT POINT (MATCH BO2 STYLE)
     # --------------------------------------------------------
 
-    breakout1_x = base_x + MAIN_LENGTH_MM
+    bo1_block_bottom_y = base_y - (BREAKOUT1_HS1_DRAW_HEIGHT_MM / 2)
+    bo1_block_height   = BREAKOUT1_HS1_DRAW_HEIGHT_MM
 
-    c.saveState()  # protect dash/font state
+    c.saveState()
 
     c.setLineWidth(1.0)
     c.setDash(3, 3)
+    c.setStrokeColor(colors.black)
 
     c.line(
         breakout1_x * mm,
-        (base_y - 60) * mm,
+        bo1_block_bottom_y * mm,
         breakout1_x * mm,
-        (base_y + 60) * mm
+        (bo1_block_bottom_y + bo1_block_height + 5) * mm
     )
 
     c.setDash()
-    c.setFont("Helvetica", 8)
+    c.setFont("Helvetica", 7)
+    c.setFillColor(colors.black)
 
-    c.drawString(
-        (breakout1_x + 4) * mm,
-        (base_y + 66) * mm,
+    c.drawCentredString(
+        breakout1_x * mm,
+        (bo1_block_bottom_y + bo1_block_height + 6) * mm,
         "CUT / BREAKOUT POINT"
     )
 
     c.restoreState()
+
+
 
 
 
@@ -422,6 +537,87 @@ def draw_full_harness(c, x_offset_mm=0, y_offset_mm=0):
 
     c.rect(al_x*mm, (base_y-BREAKOUT1_AL_TUBE_DRAW_HEIGHT_MM/2)*mm,
            BREAKOUT1_AL_TUBE_LENGTH_MM*mm, BREAKOUT1_AL_TUBE_DRAW_HEIGHT_MM*mm, stroke=1, fill=0)
+    
+    
+    # --------------------------------------------------------
+    # BREAKOUT 1 COMPONENT LABELS 
+    # --------------------------------------------------------
+
+    label_y = base_y  # cable centreline
+
+    draw_rotated_label(
+        c,
+        x_mm=hs1_x,
+        y_mm=label_y,
+        text=BREAKOUT1_HS1_DESCRIPTION,  # e.g. "HS1"
+        angle_deg=90
+    )
+
+    draw_rotated_label(
+        c,
+        x_mm=hs2_x,
+        y_mm=label_y,
+        text=BREAKOUT1_HS2_DESCRIPTION,  # e.g. "HS2"
+        angle_deg=90
+    )
+
+    draw_rotated_label(
+        c,
+        x_mm=al_x,
+        y_mm=label_y,
+        text=BREAKOUT1_AL_TUBE_DESCRIPTION,  # e.g. "AL TUBE"
+        angle_deg=90
+    )
+
+    # ========================
+    # BREAKOUT 1 INFORMATION TABLE (CENTERED ON HS1)
+    # ========================
+
+    # Centre of Breakout 1 assembly (HS1)
+    hs1_center_x = hs1_x + (BREAKOUT1_HS1_LENGTH_MM / 2)
+
+    bo1_table_x = hs1_center_x - (BO1_TABLE_WIDTH_MM / 2)
+    bo1_table_y = base_y - BO1_TABLE_OFFSET_Y_MM
+
+    draw_canvas_table(
+        c=c,
+        x_mm=bo1_table_x,
+        y_mm=bo1_table_y,
+        title=BO1_TABLE_TITLE,
+        data=BO1_TABLE_DATA,
+        width_mm=BO1_TABLE_WIDTH_MM,
+        row_height_mm=BO1_TABLE_ROW_HEIGHT_MM
+    )
+
+    # Height of BO1 table
+    bo1_table_height_mm = BO1_TABLE_ROW_HEIGHT_MM * len(BO1_TABLE_DATA)
+
+
+    # ========================
+    # BREAKOUT 2 INFORMATION TABLE
+    # (STACKED UNDER BO1, CENTRED ON BREAKOUT 1 ASSEMBLY)
+    # ========================
+
+    bo2_table_x = hs1_center_x - (BO2_TABLE_WIDTH_MM / 2)
+
+    bo2_table_y = (
+        bo1_table_y
+        - bo1_table_height_mm
+        - BO2_TABLE_GAP_MM
+    )
+
+    draw_canvas_table(
+        c=c,
+        x_mm=bo2_table_x,
+        y_mm=bo2_table_y,
+        title=BO2_TABLE_TITLE,
+        data=BO2_TABLE_DATA,
+        width_mm=BO2_TABLE_WIDTH_MM,
+        row_height_mm=BO2_TABLE_ROW_HEIGHT_MM
+    )
+
+
+
 
     # --------------------------------------------------------
     # GROUPS
@@ -475,6 +671,36 @@ def draw_full_harness(c, x_offset_mm=0, y_offset_mm=0):
         block_height = slots_height + 2 * SUBUNIT_BLOCK_PADDING_MM
         block_bottom_y = gy - (block_height / 2)
 
+
+        # ========================
+        # BREAKOUT 2 CUT / BREAKOUT POINT
+        # ========================
+
+        c.saveState()
+
+        c.setLineWidth(1.0)
+        c.setDash(3, 3)
+        c.setStrokeColor(colors.black)
+
+        c.line(
+            breakout2_x * mm,
+            block_bottom_y * mm,
+            breakout2_x * mm,
+            (block_bottom_y + block_height + 5) * mm
+        )
+
+        c.setDash()
+        c.setFont("Helvetica", 7)
+        c.setFillColor(colors.black)
+
+        c.drawCentredString(
+            breakout2_x * mm,
+            (block_bottom_y + block_height + 6) * mm,
+            "CUT / BREAKOUT POINT"
+        )
+
+        c.restoreState()
+
         # ========================
         # BREAKOUT 2 – HEATSHRINK 1
         # ========================
@@ -522,6 +748,38 @@ def draw_full_harness(c, x_offset_mm=0, y_offset_mm=0):
         )
 
         # ========================
+        # BREAKOUT 2 COMPONENT LABELS
+        # ========================
+
+        label_y = gy  # center of this leg
+
+        draw_rotated_label(
+            c,
+            x_mm=hs1_x,
+            y_mm=label_y,
+            text=BREAKOUT2_HS1_DESCRIPTION,
+            angle_deg=90
+        )
+
+        draw_rotated_label(
+            c,
+            x_mm=hs2_x,
+            y_mm=label_y,
+            text=BREAKOUT2_HS2_DESCRIPTION,
+            angle_deg=90
+        )
+
+        draw_rotated_label(
+            c,
+            x_mm=boot_x,
+            y_mm=label_y,
+            text=BREAKOUT2_BOOT_DESCRIPTION,
+            angle_deg=90
+        )
+
+       
+
+        # ========================
         # SUBUNIT BLOCK START
         # ========================
         # Subunits begin AFTER Breakout 2 coverage
@@ -553,8 +811,11 @@ def draw_full_harness(c, x_offset_mm=0, y_offset_mm=0):
             )
 
         # ========================
-        # SUBUNIT COLOURED END BLOCK
+        # SUBUNIT COLOURED END BLOCK (EXTENDED)
         # ========================
+
+        EXTRA_LEN_MM = 25     # +20 mm to the right
+        EXTRA_HEIGHT_MM = 25  # +20 mm total (10 up + 10 down)
 
         coloured_block_x = subunit_block_start_x + main_subunit_length_mm
 
@@ -564,9 +825,9 @@ def draw_full_harness(c, x_offset_mm=0, y_offset_mm=0):
 
         c.rect(
             coloured_block_x * mm,
-            block_bottom_y * mm,
-            SUBUNIT_COLOURED_END_LENGTH_MM * mm,
-            block_height * mm,
+            (block_bottom_y - EXTRA_HEIGHT_MM / 2) * mm,
+            (SUBUNIT_COLOURED_END_LENGTH_MM + EXTRA_LEN_MM) * mm,
+            (block_height + EXTRA_HEIGHT_MM) * mm,
             stroke=1,
             fill=1
         )
@@ -638,7 +899,14 @@ def draw_full_harness(c, x_offset_mm=0, y_offset_mm=0):
             "CUT HERE"
         )
 
-        c.restoreState()
+    
+        draw_credit_footer(
+            c,
+            x_mm=MARGIN_MM + 2,
+            y_mm=MARGIN_MM + 6
+        )
+
+    c.restoreState()
 
         # --------------------------------------------------------
         # BOTTOM REFERENCE RULER (mm)
@@ -659,9 +927,9 @@ def draw_full_size_pdf():
     c.showPage()
     c.save()
 
-# --------------------------------------------------------
-#SHOW PAGE
-# --------------------------------------------------------
+    # --------------------------------------------------------
+    # RULER 
+    # --------------------------------------------------------
 
     draw_credit_footer(
         c,
@@ -669,8 +937,6 @@ def draw_full_size_pdf():
         y_mm=MARGIN_MM + 6
     )
 
-
-    c.restoreState()
 
 
 
@@ -736,4 +1002,5 @@ if OUTPUT_MODE == "FULL":
 elif OUTPUT_MODE == "A4":
     draw_template()
 else:
-    raise ValueError("Unknown OUTPUT_MODE")
+    raise ValueError("Unknown OUTPUT_MODE") #HELLO
+#IF THE ERROR BRINGS YOU DOWN HERE GO TO THE TOP AND SELECT A4 OR FULL
