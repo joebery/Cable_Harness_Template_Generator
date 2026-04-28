@@ -9,7 +9,6 @@ from reportlab.platypus import Table, TableStyle
 # ============================================================
 # DEV TOOLS
 # ============================================================
-
 OUTPUT_MODE = "A4"      # options: "A4" or "FULL"
 
 
@@ -43,16 +42,19 @@ PAGE_HEIGHT = PAGE_HEIGHT_MM * mm
 # ============================================================
 
 BO1_TABLE_OFFSET_Y_MM = 100       # distance below Breakout 1 assembly
-BO1_TABLE_WIDTH_MM = 160         # overall table width
+BO1_TABLE_WIDTH_MM = 160          # overall table width
 BO1_TABLE_ROW_HEIGHT_MM = 10
 
 BO1_TABLE_TITLE = "BREAKOUT 1 ASSEMBLY"
 
 BO1_TABLE_DATA = [
-    ["ITEM", "DESCRIPTION"],
-    ["HS1", "Primary heatshrink"],
-    ["HS2", "Secondary heatshrink"],
-    ["AL TUBE", "Aluminium tube"],
+    ["Main Cable", "18.4mm / 576F"],
+    ["Heat Shrink Tube 1", "HEATSHRINK 38mm ADHESIVE"],
+    ["Aluminum Tube", "Aluminum Break-out 10.5cm"],
+    ["Heat Shrink Tube 2", "Heatshrink 1inch Black D"],
+    ["Subunits", "Cable sub-units in colored tubes"],
+    ["Outer Tubing", "Tube (OD:8.5, ID:5.9)"],
+    ["Strength Member", "Black central strength member 4.7mm"],
 ]
 
 # ============================================================
