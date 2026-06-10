@@ -24,6 +24,7 @@ The **Cable Harness Template Generator** is a Python-based tool designed for gen
 
 ```
 .
+├── README.md
 ├── template_gen.py
 ├── template_gen_1.0.py
 ├── template_gen_2.0.py
